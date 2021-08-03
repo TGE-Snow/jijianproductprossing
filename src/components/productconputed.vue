@@ -1,17 +1,8 @@
 <template>
   <div>
-    <vxe-textarea
-      v-model="state.inputText"
-      placeholder="自适应文本高度"
-      :autosize="{ minRows: 2 }"
-      resize="vertical"
-    ></vxe-textarea>
-
-    <vxe-table
-      :data="state.tableData"
-      show-footer
-      :footer-method="footerMethod"
-    >
+    <vxe-textarea v-model="state.inputText" resize="none" @blur="blur" @focus="focus"></vxe-textarea>
+    <div>总成本:{{state.footer}}</div>
+    <vxe-table :data="state.tableData" siz="mini" height="400">
       <vxe-table-column field="Name" title="商品名称"></vxe-table-column>
       <vxe-table-column field="Quantity" title="求和项:销量"></vxe-table-column>
       <vxe-table-column field="Cost" title="成本"></vxe-table-column>
@@ -30,48 +21,65 @@ export default {
     const state = reactive({
       inputText: "",
       tableData: [],
-      footer: "",
+      footer: ""
     });
-
-    watch(
-      () => state.inputText,
-      () => {
-        requestPost(state.inputText);
-      }
-    );
 
     function requestPost(inputText) {
       let request_data = [];
       const tableData = inputText.split("\n");
-      tableData.forEach((element) => {
+      tableData.forEach(element => {
         const field = element.split("\t");
         request_data.push({
           Name: field[0],
-          Quantity: field[1],
+          Quantity: field[1]
         });
       });
       axios
         .post("http://wmxd.tgesh.top/Product/ProductCost", {
-          Product: request_data,
+          Product: request_data
         })
-        .then((res) => {
+        .then(res => {
           const data = res.data;
           if (data.StatusCode == 200) {
-            state.tableData = data.List;
+            let constdata = [];
+            request_data.forEach(element => {
+              const ind = data.List.findIndex(val => {
+                if (element.Name == val.Name) {
+                  return true;
+                }
+              });
+              if (ind != -1) {
+                constdata.push(data.List[ind]);
+              } else {
+                if (element.Name != "") {
+                  constdata.push({
+                    ...element,
+                    Cost: "无成本",
+                    AllCost: "无成本"
+                  });
+                }
+              }
+            });
+            state.tableData = constdata;
             state.footer = data.Sum;
           }
         });
     }
 
-    function footerMethod() {
-      return [["总成本", state.footer]];
+    function blur() {
+      requestPost(state.inputText);
+    }
+
+    function focus() {
+      state.inputText = "";
     }
 
     return {
       state,
-      footerMethod,
+      blur,
+      focus
     };
-  },
+  }
 };
 </script>
 

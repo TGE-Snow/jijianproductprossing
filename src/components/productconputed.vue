@@ -64,6 +64,8 @@ export default {
             state.footer = data.Sum;
           }
         });
+
+      axios.get("http://xi29js.natappfree.cc/Count");
     }
 
     function blur() {
